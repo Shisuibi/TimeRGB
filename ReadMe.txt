@@ -115,7 +115,6 @@
 
 ★キー操作＆システムメッセージ
 
-
 　Ctrl＋A　｜　システム再起動　"ColdBoot[RST]"
 　Ctrl＋S　｜　時刻設定（4桁の時刻を数字キーで入力）　"Set Time[NUM]"
 　Ctrl＋D　｜　LEDモード（時刻／計時）　"LED Mode[CLK]"　"LED Mode[TMR]"
