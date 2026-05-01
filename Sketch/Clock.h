@@ -164,20 +164,19 @@ static void ClockTimer(void) {
 }
 //------------------------------------------------------------------------------//
 static void ClockDisp(void) {
+	Uint08 iSM = SegModeRead();
 	if(SetTimeRead() != False) return;
 
-	if(SegModeRead() == False) {
-		aiSegLedNum[X] = aiTimerHour24[0] / 10;		aiSegLedNum[Y] = aiTimerHour24[0] % 10;
-		aiSegLedNum[Z] = aiTimerMinute[0] / 10;		aiSegLedNum[W] = aiTimerMinute[0] % 10;
-
-		if(aiTimerSecond[0] & 0x08) aiSegLedNum[X] |= 0x80;		if(aiTimerSecond[0] & 0x04) aiSegLedNum[Y] |= 0x80;
-		if(aiTimerSecond[0] & 0x02) aiSegLedNum[Z] |= 0x80;		if(aiTimerSecond[0] & 0x01) aiSegLedNum[W] |= 0x80;
+	if(iSM == False) {
+		aiSegLedNum[X] = aiTimerHour24[iSM] / 10;	if(aiTimerSecond[iSM] & 0x08) aiSegLedNum[X] |= DecimalPoint;
+		aiSegLedNum[Y] = aiTimerHour24[iSM] % 10;	if(aiTimerSecond[iSM] & 0x04) aiSegLedNum[Y] |= DecimalPoint;
+		aiSegLedNum[Z] = aiTimerMinute[iSM] / 10;	if(aiTimerSecond[iSM] & 0x02) aiSegLedNum[Z] |= DecimalPoint;
+		aiSegLedNum[W] = aiTimerMinute[iSM] % 10;	if(aiTimerSecond[iSM] & 0x01) aiSegLedNum[W] |= DecimalPoint;
 	} else {
-		aiSegLedNum[X] = aiTimerMinute[1] / 10;		aiSegLedNum[Y] = aiTimerMinute[1] % 10;
-		aiSegLedNum[Z] = aiTimerSecond[1] / 10;		aiSegLedNum[W] = aiTimerSecond[1] % 10;
-
-		if(aiTimerCentis[1] > 80) aiSegLedNum[X] |= 0x80;	if(aiTimerCentis[1] > 60) aiSegLedNum[Y] |= 0x80;
-		if(aiTimerCentis[1] > 40) aiSegLedNum[Z] |= 0x80;	if(aiTimerCentis[1] > 20) aiSegLedNum[W] |= 0x80;
+		aiSegLedNum[X] = aiTimerMinute[iSM] / 10;	if(aiTimerCentis[iSM] > 80) aiSegLedNum[X] |= DecimalPoint;
+		aiSegLedNum[Y] = aiTimerMinute[iSM] % 10;	if(aiTimerCentis[iSM] > 60) aiSegLedNum[Y] |= DecimalPoint;
+		aiSegLedNum[Z] = aiTimerSecond[iSM] / 10;	if(aiTimerCentis[iSM] > 40) aiSegLedNum[Z] |= DecimalPoint;
+		aiSegLedNum[W] = aiTimerSecond[iSM] % 10;	if(aiTimerCentis[iSM] > 20) aiSegLedNum[W] |= DecimalPoint;
 	}
 }
 //==============================================================================//
