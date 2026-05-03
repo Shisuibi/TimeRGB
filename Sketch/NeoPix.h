@@ -1,7 +1,7 @@
 
 //==============================================================================//
 //	Portable NTP Clock Timer Mood Light "TimeRGB" I/O Sketch for ESP32-S3-Zero	//
-//				Implemented by Shisuibi Å`Grand Master SorcerianÅ`				//
+//				Implemented by Shisuibi --Grand Master Sorcerian--				//
 //==============================================================================//
 
 
