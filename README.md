@@ -22,7 +22,7 @@
 		</TD><TD>
 			<IMG SRC="https://crystalpalace.web.fc2.com/timergb/helptext.png" ALT="HelpText" WIDTH="480">
 		</TD><TD>
-			<IMG SRC="https://crystalpalace.web.fc2.com/timergb/exterior.jpg" ALT="実機外観" WIDTH="480">
+			<IMG SRC="https://crystalpalace.web.fc2.com/timergb/xterior.jpg" ALT="実機外観" WIDTH="480">
 		</TD></TR>
 	</TABLE></DIV>
 </HTML>
