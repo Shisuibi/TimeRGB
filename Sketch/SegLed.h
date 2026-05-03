@@ -90,7 +90,7 @@ static void SegLedDisp(void) {
 	Sint08 i, j;
 
 	for(i = 0;i < XYZW;i++) {
-		for(iMap = aiSegLedMap[aiSegLedNum[i]], j = 0;j < 8;iMap >>= 1, j++) {
+		for(iMap = aiSegLedMap[aiSegLedNum[i]], j = 0;j < 8;j++, iMap >>= 1) {
 			digitalWrite(aiSegLedPin[j], iAnodeCathode ^ (iMap & 0x01));
 		}
 
