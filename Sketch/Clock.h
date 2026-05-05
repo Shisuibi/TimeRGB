@@ -43,94 +43,6 @@ static Uint08 aiTimerHour24[2];							//	システム時刻（時）
 
 
 //==============================================================================//
-static void ClockWiFiDis(void) {
-	Sint16 i, j;
-
-	for(i = 0;i < 6;i++) {
-		aiSegLedNum[X] = aiSegLedNum[Z] = aiClockSegLed[i][0];
-		aiSegLedNum[Y] = aiSegLedNum[W] = aiClockSegLed[i][1];
-
-		for(j = 0;j < AdjustInterval;j++) SegLedDisp();
-	}
-}
-//------------------------------------------------------------------------------//
-static void ClockWiFiEna(void) {
-	Sint16 i, j;
-
-	for(i = 0;i < 6;i++) {
-		aiSegLedNum[X] = aiSegLedNum[Z] = aiClockSegLed[5 - i][0];
-		aiSegLedNum[Y] = aiSegLedNum[W] = aiClockSegLed[5 - i][1];
-
-		for(j = 0;j < AdjustInterval;j++) SegLedDisp();
-	}
-}
-//------------------------------------------------------------------------------//
-static void ClockAdjust(void) {
-	struct tm TimeInfo;
-	Sint16 i, j;
-
-	SegLedReset();
-
-#ifdef		WiFiSSIDPSWD
-	WiFi.begin(WiFiSSIDPSWD);
-#else
-	WiFi.begin();
-#endif
-
-	while(WiFi.status() != WL_CONNECTED) {
-		SegLedClear();
-
-		for(i = 0;i < 6;i++) {
-			aiSegLedNum[X] = aiClockSegLed[i][2];
-			aiSegLedNum[Y] = aiClockSegLed[i][3];
-
-			for(j = 0;j < AdjustInterval;j++) SegLedDisp();
-		}
-
-		SegLedReset();
-	}
-
-	while(!getLocalTime(&TimeInfo)) {
-		SegLedClear();
-
-		for(i = 0;i < 6;i++) {
-			aiSegLedNum[Z] = aiClockSegLed[i][2];
-			aiSegLedNum[W] = aiClockSegLed[i][3];
-
-			for(j = 0;j < AdjustInterval;j++) SegLedDisp();
-		}
-
-		SegLedReset();
-	}
-
-	aiTimerHour24[0] = TimeInfo.tm_hour;	aiTimerMinute[0] = TimeInfo.tm_min;
-	aiTimerSecond[0] = TimeInfo.tm_sec;		aiTimerCentis[0] = 0;
-
-	aiTimerMillis[0] = millis();
-	WiFi.disconnect(True);
-
-	SegLedClear();
-}
-//------------------------------------------------------------------------------//
-static void ClockChange(void) {
-	if(SegModeRead() == False) {
-		if((aiTimerHour24[0] = aiSegLedNum[X] * 10 + aiSegLedNum[Y]) > 23) aiTimerHour24[0] = 0;
-		if((aiTimerMinute[0] = aiSegLedNum[Z] * 10 + aiSegLedNum[W]) > 59) aiTimerMinute[0] = 0;
-
-		aiTimerSecond[0] = aiTimerCentis[0] = 0;
-		aiTimerMillis[0] = millis();
-	} else {
-		if((aiTimerMinute[1] = aiSegLedNum[X] * 10 + aiSegLedNum[Y]) > 59) aiTimerMinute[1] = 0;
-		if((aiTimerSecond[1] = aiSegLedNum[Z] * 10 + aiSegLedNum[W]) > 59) aiTimerSecond[1] = 0;
-
-		aiTimerHour24[1] = aiTimerCentis[1] = 0;
-		aiTimerMillis[1] = millis();
-	}
-}
-//==============================================================================//
-
-
-//==============================================================================//
 static void ClockReset(Sint08 iMode) {
 	aiTimerMillis[iMode] = millis();
 
@@ -177,6 +89,101 @@ static void ClockDisp(void) {
 		aiSegLedNum[Y] = aiTimerMinute[iSM] % 10;	if(aiTimerCentis[iSM] > 60) aiSegLedNum[Y] |= DecimalPoint;
 		aiSegLedNum[Z] = aiTimerSecond[iSM] / 10;	if(aiTimerCentis[iSM] > 40) aiSegLedNum[Z] |= DecimalPoint;
 		aiSegLedNum[W] = aiTimerSecond[iSM] % 10;	if(aiTimerCentis[iSM] > 20) aiSegLedNum[W] |= DecimalPoint;
+	}
+}
+//==============================================================================//
+
+
+//==============================================================================//
+static void ClockWiFiDis(void) {
+	Sint16 i, j;
+
+	for(i = 0;i < 6;i++) {
+		aiSegLedNum[X] = aiSegLedNum[Z] = aiClockSegLed[i][0];
+		aiSegLedNum[Y] = aiSegLedNum[W] = aiClockSegLed[i][1];
+
+		for(j = 0;j < AdjustInterval;j++) SegLedDisp();
+	}
+}
+//------------------------------------------------------------------------------//
+static void ClockWiFiEna(void) {
+	Sint16 i, j;
+
+	for(i = 0;i < 6;i++) {
+		aiSegLedNum[X] = aiSegLedNum[Z] = aiClockSegLed[5 - i][0];
+		aiSegLedNum[Y] = aiSegLedNum[W] = aiClockSegLed[5 - i][1];
+
+		for(j = 0;j < AdjustInterval;j++) SegLedDisp();
+	}
+}
+//------------------------------------------------------------------------------//
+static Sint08 ClockAdjust(void) {
+	struct tm TimeInfo;
+	Sint16 i, j;
+
+	SegLedReset();
+
+#ifdef		WiFiSSIDPSWD
+	WiFi.begin(WiFiSSIDPSWD);
+#else
+	WiFi.begin();
+#endif
+
+	while(WiFi.status() != WL_CONNECTED) {
+		SegLedClear();
+
+		for(i = 0;i < 6;i++) {
+			aiSegLedNum[X] = aiClockSegLed[i][2];
+			aiSegLedNum[Y] = aiClockSegLed[i][3];
+
+			for(j = 0;j < AdjustInterval;j++) SegLedDisp();
+		}
+
+		ClockTimer();
+		if(aiTimerMinute[1] > 0) {	WiFi.disconnect(True);	return(True);	}
+
+		SegLedReset();
+	}
+
+	while(!getLocalTime(&TimeInfo)) {
+		SegLedClear();
+
+		for(i = 0;i < 6;i++) {
+			aiSegLedNum[Z] = aiClockSegLed[i][2];
+			aiSegLedNum[W] = aiClockSegLed[i][3];
+
+			for(j = 0;j < AdjustInterval;j++) SegLedDisp();
+		}
+
+		ClockTimer();
+		if(aiTimerMinute[1] > 0) {	WiFi.disconnect(True);	return(True);	}
+
+		SegLedReset();
+	}
+
+	aiTimerHour24[0] = TimeInfo.tm_hour;	aiTimerMinute[0] = TimeInfo.tm_min;
+	aiTimerSecond[0] = TimeInfo.tm_sec;		aiTimerCentis[0] = 0;
+
+	aiTimerMillis[0] = millis();
+	WiFi.disconnect(True);
+
+	SegLedClear();
+	return(False);
+}
+//------------------------------------------------------------------------------//
+static void ClockChange(void) {
+	if(SegModeRead() == False) {
+		if((aiTimerHour24[0] = aiSegLedNum[X] * 10 + aiSegLedNum[Y]) > 23) aiTimerHour24[0] = 0;
+		if((aiTimerMinute[0] = aiSegLedNum[Z] * 10 + aiSegLedNum[W]) > 59) aiTimerMinute[0] = 0;
+
+		aiTimerSecond[0] = aiTimerCentis[0] = 0;
+		aiTimerMillis[0] = millis();
+	} else {
+		if((aiTimerMinute[1] = aiSegLedNum[X] * 10 + aiSegLedNum[Y]) > 59) aiTimerMinute[1] = 0;
+		if((aiTimerSecond[1] = aiSegLedNum[Z] * 10 + aiSegLedNum[W]) > 59) aiTimerSecond[1] = 0;
+
+		aiTimerHour24[1] = aiTimerCentis[1] = 0;
+		aiTimerMillis[1] = millis();
 	}
 }
 //==============================================================================//

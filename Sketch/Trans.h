@@ -275,7 +275,9 @@ static void TransInit(void) {
 	ResetGpio(False);	ResetCtrl(False);
 	TransFileInit();	TransFileLoad();
 
-	if(NtpWiFiRead() != False) ClockAdjust();
+	if(NtpWiFiRead() != False) {
+		if(ClockAdjust() != False) TransMessage("Canceling time adjustment");
+	}
 }
 //------------------------------------------------------------------------------//
 static void TransMove(void) {
