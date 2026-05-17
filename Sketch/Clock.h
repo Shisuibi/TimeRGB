@@ -80,10 +80,10 @@ static void ClockDisp(void) {
 	if(SetTimeRead() != False) return;
 
 	if(iSM == False) {
-		aiSegLedNum[X] = aiTimerHour24[iSM] / 10;	if(aiTimerSecond[iSM] & 0x08) aiSegLedNum[X] |= DecimalPoint;
-		aiSegLedNum[Y] = aiTimerHour24[iSM] % 10;	if(aiTimerSecond[iSM] & 0x04) aiSegLedNum[Y] |= DecimalPoint;
-		aiSegLedNum[Z] = aiTimerMinute[iSM] / 10;	if(aiTimerSecond[iSM] & 0x02) aiSegLedNum[Z] |= DecimalPoint;
-		aiSegLedNum[W] = aiTimerMinute[iSM] % 10;	if(aiTimerSecond[iSM] & 0x01) aiSegLedNum[W] |= DecimalPoint;
+		aiSegLedNum[X] = aiTimerHour24[iSM] / 10;	if((aiTimerSecond[iSM] % 10) & 0x08) aiSegLedNum[X] |= DecimalPoint;
+		aiSegLedNum[Y] = aiTimerHour24[iSM] % 10;	if((aiTimerSecond[iSM] % 10) & 0x04) aiSegLedNum[Y] |= DecimalPoint;
+		aiSegLedNum[Z] = aiTimerMinute[iSM] / 10;	if((aiTimerSecond[iSM] % 10) & 0x02) aiSegLedNum[Z] |= DecimalPoint;
+		aiSegLedNum[W] = aiTimerMinute[iSM] % 10;	if((aiTimerSecond[iSM] % 10) & 0x01) aiSegLedNum[W] |= DecimalPoint;
 	} else {
 		aiSegLedNum[X] = aiTimerMinute[iSM] / 10;	if(aiTimerCentis[iSM] > 80) aiSegLedNum[X] |= DecimalPoint;
 		aiSegLedNum[Y] = aiTimerMinute[iSM] % 10;	if(aiTimerCentis[iSM] > 60) aiSegLedNum[Y] |= DecimalPoint;
