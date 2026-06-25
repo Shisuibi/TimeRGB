@@ -22,6 +22,9 @@
 #define		SerialSegSizeTx				0x0080			//	通信端末切片文字数（送信）
 //------------------------------------------------------------------------------//
 #define		BootBtnInterval				1000			//	ブート押釦間隔
+//------------------------------------------------------------------------------//
+static void TransString(Cint08*);
+static void TransMessage(Cint08*);
 //==============================================================================//
 
 
@@ -150,9 +153,10 @@ static void TransSetTime(void) {
 //------------------------------------------------------------------------------//
 static void TransLedMode(void) {
 	LedModeWrite(LedModeRead() + 1);
+	ClockReset();
 
 	if(SegModeRead() == False)		TransMessage(pTransSegModeClk);
-	else						{	TransMessage(pTransSegModeTmr);		ClockReset(1);	}
+	else						{	TransMessage(pTransSegModeTmr);		}
 
 			if(LedModeRead() == 0) TransMessage(pTransRgbModeOff);
 	else	if(LedModeRead() == 2) TransMessage(pTransRgbModeOn );
@@ -160,7 +164,9 @@ static void TransLedMode(void) {
 //------------------------------------------------------------------------------//
 static void TransSegMode(void) {
 	if(SegModeRead() != False)	{	TransMessage(pTransSegModeClk);		SegModeLow();	}
-	else						{	SegModeHigh();	TransMessage(pTransSegModeTmr);		ClockReset(1);	}
+	else						{	SegModeHigh();	TransMessage(pTransSegModeTmr);		}
+
+	ClockReset();
 }
 //------------------------------------------------------------------------------//
 static void TransRgbMode(void) {
@@ -275,9 +281,8 @@ static void TransInit(void) {
 	ResetGpio(False);	ResetCtrl(False);
 	TransFileInit();	TransFileLoad();
 
-	if(NtpWiFiRead() != False) {
-		if(ClockAdjust() != False) TransMessage("Canceling time adjustment");
-	}
+	if(NtpWiFiRead() != False) ClockAdjust();
+	ClockLocal();	ClockReset();
 }
 //------------------------------------------------------------------------------//
 static void TransMove(void) {

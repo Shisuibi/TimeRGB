@@ -23,6 +23,15 @@
 
 
 //==============================================================================//
+static Cint08* pClockAdjustWiFi = "WiFi |";				//	時刻調整（WiFi接続）
+static Cint08* pClockAdjustNICT = "NICT |";				//	時刻調整（NICT接続）
+
+static Cint08* pClockAdjustExec = "o";					//	時刻調整（接続実行）
+static Cint08* pClockAdjustDone = "| Done";				//	時刻調整（接続完了）
+
+static Cint08* pClockAdjustCancel  = "| Cancel";		//	時刻調整（接続取消）
+static Cint08* pClockAdjustTimeout = "| Timeout";		//	時刻調整（接続打切）
+//------------------------------------------------------------------------------//
 static Uint08 aiClockSegLed[6][4] = {					//	7セグLED（位置）
 	{	SegLedPos0A,	SegLedPos0A,	SegLedPos0A,	SegLedPos0D,	},
 	{	SegLedPos0B,	SegLedPos0F,	SegLedPos0B,	SegLedPos0E,	},
@@ -32,63 +41,92 @@ static Uint08 aiClockSegLed[6][4] = {					//	7セグLED（位置）
 	{	SegLedPos0D,	SegLedPos0D,	SegLedPos0F,	SegLedPos0C,	},
 };
 //------------------------------------------------------------------------------//
-static Uint32 aiTimerMillis[2];							//	システム時刻ミリ秒
+static time_t iCurrTime;								//	現在時刻
+static struct tm TimeInfo;								//	時刻情報
 
-static Uint08 aiTimerCentis[2];							//	システム時刻（厘）
-static Uint08 aiTimerSecond[2];							//	システム時刻（秒）
+static Uint08 aiClockSecond;							//	ローカル時刻（秒）
+static Uint08 aiClockMinute;							//	ローカル時刻（分）
+static Uint08 aiClockHour24;							//	ローカル時刻（時）
 
-static Uint08 aiTimerMinute[2];							//	システム時刻（分）
-static Uint08 aiTimerHour24[2];							//	システム時刻（時）
-//==============================================================================//
+static Uint08 aiClockDay;								//	ローカル時刻（日）
+static Uint08 aiClockMonth;								//	ローカル時刻（月）
+static Uint08 aiClockYear;								//	ローカル時刻（年）
 
-
-//==============================================================================//
-static void ClockReset(Sint08 iMode) {
-	aiTimerMillis[iMode] = millis();
-
-	aiTimerCentis[iMode] = aiTimerSecond[iMode] = 0;
-	aiTimerMinute[iMode] = aiTimerHour24[iMode] = 0;
-}
+static Uint08 aiClockWeek;								//	ローカル時刻（曜）
 //------------------------------------------------------------------------------//
-static void ClockTimer(void) {
-	Uint32 iMillis;
-	Sint08 i;
+static Uint32 aiTimerMillis;							//	システム時刻ミリ秒
 
-	for(i = 0;i < 2;i++) {
-		iMillis = millis() - aiTimerMillis[i];
+static Uint08 aiTimerCentis;							//	システム時刻（厘）
+static Uint08 aiTimerSecond;							//	システム時刻（秒）
 
-		while(iMillis > 999) {
-			iMillis -= 1000;	aiTimerMillis[i] += 1000;
+static Uint08 aiTimerMinute;							//	システム時刻（分）
+static Uint08 aiTimerHour24;							//	システム時刻（時）
+//==============================================================================//
 
-			if(++aiTimerSecond[i] > 59) {
-				aiTimerSecond[i] = 0;
 
-				if(++aiTimerMinute[i] > 59) {
-					aiTimerMinute[i] = 0;
+//==============================================================================//
+static void ClockReset(void) {
+	aiTimerMillis = millis();
 
-					if(++aiTimerHour24[i] > 23) aiTimerHour24[i] = 0;
-				}
-			}
-		}
-
-		aiTimerCentis[i] = (Uint08)(iMillis / 10);
+	if(SegModeRead() == False) {
+		aiTimerCentis =             0;	aiTimerSecond = aiClockSecond;
+		aiTimerMinute = aiClockMinute;	aiTimerHour24 = aiClockHour24;
+	} else {
+		aiTimerCentis = aiTimerSecond = 0;
+		aiTimerMinute = aiTimerHour24 = 0;
 	}
 }
 //------------------------------------------------------------------------------//
+static void ClockLocal(void) {
+	time_t iPrevTime = iCurrTime;
+
+	if(time(&iCurrTime) == iPrevTime) return;
+	localtime_r(&iCurrTime, &TimeInfo);
+
+	aiClockSecond = TimeInfo.tm_sec ;
+	aiClockMinute = TimeInfo.tm_min ;
+	aiClockHour24 = TimeInfo.tm_hour;
+
+	aiClockDay    = TimeInfo.tm_mday;
+	aiClockMonth  = TimeInfo.tm_mon ;
+	aiClockYear   = TimeInfo.tm_year;
+
+	aiClockWeek   = TimeInfo.tm_wday;
+}
+//------------------------------------------------------------------------------//
+static void ClockTimer(void) {
+	Uint32 iMillis = millis() - aiTimerMillis;
+
+	while(iMillis > 999) {
+		iMillis -= 1000;	aiTimerMillis += 1000;
+
+		if(++aiTimerSecond > 59) {
+			aiTimerSecond = 0;
+
+			if(++aiTimerMinute > 59) {
+				aiTimerMinute = 0;
+
+				if(++aiTimerHour24 > 23) aiTimerHour24 = 0;
+			}
+		}
+	}
+
+	aiTimerCentis = (Uint08)(iMillis / 10);
+}
+//------------------------------------------------------------------------------//
 static void ClockDisp(void) {
-	Uint08 iSM = SegModeRead();
 	if(SetTimeRead() != False) return;
 
-	if(iSM == False) {
-		aiSegLedNum[X] = aiTimerHour24[iSM] / 10;	if((aiTimerSecond[iSM] % 10) & 0x08) aiSegLedNum[X] |= DecimalPoint;
-		aiSegLedNum[Y] = aiTimerHour24[iSM] % 10;	if((aiTimerSecond[iSM] % 10) & 0x04) aiSegLedNum[Y] |= DecimalPoint;
-		aiSegLedNum[Z] = aiTimerMinute[iSM] / 10;	if((aiTimerSecond[iSM] % 10) & 0x02) aiSegLedNum[Z] |= DecimalPoint;
-		aiSegLedNum[W] = aiTimerMinute[iSM] % 10;	if((aiTimerSecond[iSM] % 10) & 0x01) aiSegLedNum[W] |= DecimalPoint;
+	if(SegModeRead() == False) {
+		aiSegLedNum[X] = aiTimerHour24 / 10;	if((aiTimerSecond % 10) & 0x08) aiSegLedNum[X] |= DecimalPoint;
+		aiSegLedNum[Y] = aiTimerHour24 % 10;	if((aiTimerSecond % 10) & 0x04) aiSegLedNum[Y] |= DecimalPoint;
+		aiSegLedNum[Z] = aiTimerMinute / 10;	if((aiTimerSecond % 10) & 0x02) aiSegLedNum[Z] |= DecimalPoint;
+		aiSegLedNum[W] = aiTimerMinute % 10;	if((aiTimerSecond % 10) & 0x01) aiSegLedNum[W] |= DecimalPoint;
 	} else {
-		aiSegLedNum[X] = aiTimerMinute[iSM] / 10;	if(aiTimerCentis[iSM] > 80) aiSegLedNum[X] |= DecimalPoint;
-		aiSegLedNum[Y] = aiTimerMinute[iSM] % 10;	if(aiTimerCentis[iSM] > 60) aiSegLedNum[Y] |= DecimalPoint;
-		aiSegLedNum[Z] = aiTimerSecond[iSM] / 10;	if(aiTimerCentis[iSM] > 40) aiSegLedNum[Z] |= DecimalPoint;
-		aiSegLedNum[W] = aiTimerSecond[iSM] % 10;	if(aiTimerCentis[iSM] > 20) aiSegLedNum[W] |= DecimalPoint;
+		aiSegLedNum[X] = aiTimerMinute / 10;	if(aiTimerCentis > 80) aiSegLedNum[X] |= DecimalPoint;
+		aiSegLedNum[Y] = aiTimerMinute % 10;	if(aiTimerCentis > 60) aiSegLedNum[Y] |= DecimalPoint;
+		aiSegLedNum[Z] = aiTimerSecond / 10;	if(aiTimerCentis > 40) aiSegLedNum[Z] |= DecimalPoint;
+		aiSegLedNum[W] = aiTimerSecond % 10;	if(aiTimerCentis > 20) aiSegLedNum[W] |= DecimalPoint;
 	}
 }
 //==============================================================================//
@@ -117,73 +155,74 @@ static void ClockWiFiEna(void) {
 	}
 }
 //------------------------------------------------------------------------------//
-static Sint08 ClockAdjust(void) {
-	struct tm TimeInfo;
+static Sint08 ClockRotate(Uint08 iDigit) {
 	Sint16 i, j;
+	SegLedClear();
+
+	for(i = 0;i < 6;i++) {
+		aiSegLedNum[iDigit + 0] = aiClockSegLed[i][2];
+		aiSegLedNum[iDigit + 1] = aiClockSegLed[i][3];
+
+		for(j = 0;j < AdjustInterval;j++) SegLedDisp();
+	}
+
+	ClockTimer();
+
+	if(BotBtnRead() == False) {
+		while(BotBtnRead() == False);
+		TransMessage(pClockAdjustCancel);	return(True);
+	}
+
+	if(aiTimerMinute > 0) {
+		TransMessage(pClockAdjustTimeout);	return(True);
+	}
 
 	SegLedReset();
+	return(False);
+}
+//------------------------------------------------------------------------------//
+static void ClockAdjust(void) {
+	TransMessage("Attempting time adjustment");
 
 #ifdef		WiFiSSIDPSWD
 	WiFi.begin(WiFiSSIDPSWD);
 #else
 	WiFi.begin();
 #endif
+	SegLedReset();
 
-	while(WiFi.status() != WL_CONNECTED) {
-		SegLedClear();
-
-		for(i = 0;i < 6;i++) {
-			aiSegLedNum[X] = aiClockSegLed[i][2];
-			aiSegLedNum[Y] = aiClockSegLed[i][3];
-
-			for(j = 0;j < AdjustInterval;j++) SegLedDisp();
-		}
-
-		ClockTimer();
-		if(aiTimerMinute[1] > 0) {	WiFi.disconnect(True);	return(True);	}
-
-		SegLedReset();
+	for(TransString(pClockAdjustWiFi);WiFi.status() != WL_CONNECTED;TransString(pClockAdjustExec)) {
+		if(ClockRotate(X) != False) {	WiFi.disconnect(True);	return;		}
 	}
 
-	while(!getLocalTime(&TimeInfo)) {
-		SegLedClear();
+	TransMessage(pClockAdjustDone);
 
-		for(i = 0;i < 6;i++) {
-			aiSegLedNum[Z] = aiClockSegLed[i][2];
-			aiSegLedNum[W] = aiClockSegLed[i][3];
-
-			for(j = 0;j < AdjustInterval;j++) SegLedDisp();
-		}
-
-		ClockTimer();
-		if(aiTimerMinute[1] > 0) {	WiFi.disconnect(True);	return(True);	}
-
-		SegLedReset();
+	for(TransString(pClockAdjustNICT);!getLocalTime(&TimeInfo, 100);TransString(pClockAdjustExec)) {
+		if(ClockRotate(Z) != False) {	WiFi.disconnect(True);	return;		}
 	}
 
-	aiTimerHour24[0] = TimeInfo.tm_hour;	aiTimerMinute[0] = TimeInfo.tm_min;
-	aiTimerSecond[0] = TimeInfo.tm_sec;		aiTimerCentis[0] = 0;
-
-	aiTimerMillis[0] = millis();
-	WiFi.disconnect(True);
+	TransMessage(pClockAdjustDone);
 
 	SegLedClear();
-	return(False);
+	WiFi.disconnect(True);
+
+	strftime((char*)aiStringBuf, StringSizeL, "%Y/%m/%d %a %H:%M:%S", &TimeInfo);
+	TransMessage((Cint08*)aiStringBuf);
 }
 //------------------------------------------------------------------------------//
 static void ClockChange(void) {
 	if(SegModeRead() == False) {
-		if((aiTimerHour24[0] = aiSegLedNum[X] * 10 + aiSegLedNum[Y]) > 23) aiTimerHour24[0] = 0;
-		if((aiTimerMinute[0] = aiSegLedNum[Z] * 10 + aiSegLedNum[W]) > 59) aiTimerMinute[0] = 0;
+		if((aiTimerHour24 = aiSegLedNum[X] * 10 + aiSegLedNum[Y]) > 23) aiTimerHour24 = 0;
+		if((aiTimerMinute = aiSegLedNum[Z] * 10 + aiSegLedNum[W]) > 59) aiTimerMinute = 0;
 
-		aiTimerSecond[0] = aiTimerCentis[0] = 0;
-		aiTimerMillis[0] = millis();
+		aiTimerSecond = aiTimerCentis = 0;
+		aiTimerMillis = millis();
 	} else {
-		if((aiTimerMinute[1] = aiSegLedNum[X] * 10 + aiSegLedNum[Y]) > 59) aiTimerMinute[1] = 0;
-		if((aiTimerSecond[1] = aiSegLedNum[Z] * 10 + aiSegLedNum[W]) > 59) aiTimerSecond[1] = 0;
+		if((aiTimerMinute = aiSegLedNum[X] * 10 + aiSegLedNum[Y]) > 59) aiTimerMinute = 0;
+		if((aiTimerSecond = aiSegLedNum[Z] * 10 + aiSegLedNum[W]) > 59) aiTimerSecond = 0;
 
-		aiTimerHour24[1] = aiTimerCentis[1] = 0;
-		aiTimerMillis[1] = millis();
+		aiTimerHour24 = aiTimerCentis = 0;
+		aiTimerMillis = millis();
 	}
 }
 //==============================================================================//
@@ -191,11 +230,12 @@ static void ClockChange(void) {
 
 //==============================================================================//
 static void ClockInit(void) {
-	ClockReset(0);	ClockReset(1);
+	iCurrTime = 0;
 	configTzTime("JST-9", "ntp.nict.jp", "ntp.jst.mfeed.ad.jp");
 }
 //------------------------------------------------------------------------------//
 static void ClockMove(void) {
+	ClockLocal();
 	ClockTimer();
 	ClockDisp();
 }
