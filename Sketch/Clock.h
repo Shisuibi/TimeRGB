@@ -73,15 +73,12 @@ static void ClockReset(void) {
 }
 //------------------------------------------------------------------------------//
 static void ClockClear(void) {
-	iTimerMillis = millis();
-
 	if(SegModeRead() == False) {
-		iTimerCentis =             0;	iTimerSecond = iClockSecond;
+		iTimerMillis = millis();
+
+		iTimerCentis =            0;	iTimerSecond = iClockSecond;
 		iTimerMinute = iClockMinute;	iTimerHour24 = iClockHour24;
-	} else {
-		iTimerCentis = iTimerSecond = 0;
-		iTimerMinute = iTimerHour24 = 0;
-	}
+	} else ClockReset();
 }
 //------------------------------------------------------------------------------//
 static void ClockLocal(void) {
