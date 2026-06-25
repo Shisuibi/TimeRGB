@@ -54,7 +54,7 @@ static void NeoPixMove(void) {
 		NeoPixWrite(0x00, 0x00, 0x00);	return;
 	}
 
-	afHsv[X] = (Sflt32)((((Uint16)aiTimerSecond * 100 + aiTimerCentis) << SegModeRead()) % 6000) / 6000.0;
+	afHsv[X] = (Sflt32)((((Uint16)iTimerSecond * 100 + iTimerCentis) << SegModeRead()) % 6000) / 6000.0;
 	afHsv[Y] = 1.0;
 	afHsv[Z] = 0.75 + cos(6.0 * PI * afHsv[X]) * 0.25;
 

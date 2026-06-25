@@ -153,7 +153,7 @@ static void TransSetTime(void) {
 //------------------------------------------------------------------------------//
 static void TransLedMode(void) {
 	LedModeWrite(LedModeRead() + 1);
-	ClockReset();
+	ClockClear();
 
 	if(SegModeRead() == False)		TransMessage(pTransSegModeClk);
 	else						{	TransMessage(pTransSegModeTmr);		}
@@ -166,7 +166,7 @@ static void TransSegMode(void) {
 	if(SegModeRead() != False)	{	TransMessage(pTransSegModeClk);		SegModeLow();	}
 	else						{	SegModeHigh();	TransMessage(pTransSegModeTmr);		}
 
-	ClockReset();
+	ClockClear();
 }
 //------------------------------------------------------------------------------//
 static void TransRgbMode(void) {
@@ -282,7 +282,7 @@ static void TransInit(void) {
 	TransFileInit();	TransFileLoad();
 
 	if(NtpWiFiRead() != False) ClockAdjust();
-	ClockLocal();	ClockReset();
+	ClockLocal();	ClockClear();
 }
 //------------------------------------------------------------------------------//
 static void TransMove(void) {
