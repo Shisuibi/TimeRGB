@@ -44,12 +44,12 @@ static Uint08 aiClockSegLed[6][4] = {					//	7セグLED（位置）
 static time_t iCurrTime;								//	現在時刻
 static struct tm TimeInfo;								//	時刻情報
 
-static Uint08 iClockSecond;								//	ローカル時刻（秒）
-static Uint08 iClockMinute;								//	ローカル時刻（分）
-static Uint08 iClockHour24;								//	ローカル時刻（時）
+static Uint08 iClockSec;								//	ローカル時刻（秒）
+static Uint08 iClockMin;								//	ローカル時刻（分）
+static Uint08 iClockHour;								//	ローカル時刻（時）
 
 static Uint08 iClockDay;								//	ローカル時刻（日）
-static Uint08 iClockMonth;								//	ローカル時刻（月）
+static Uint08 iClockMon;								//	ローカル時刻（月）
 static Uint08 iClockYear;								//	ローカル時刻（年）
 
 static Uint08 iClockWeek;								//	ローカル時刻（曜）
@@ -65,20 +65,20 @@ static Uint08 iTimerHour24;								//	システム時刻（時）
 
 
 //==============================================================================//
-static void ClockReset(void) {
+static void ClockClear(void) {
 	iTimerMillis = millis();
 
 	iTimerCentis = iTimerSecond = 0;
 	iTimerMinute = iTimerHour24 = 0;
 }
 //------------------------------------------------------------------------------//
-static void ClockClear(void) {
+static void ClockReset(void) {
 	if(SegModeRead() == False) {
 		iTimerMillis = millis();
 
-		iTimerCentis =            0;	iTimerSecond = iClockSecond;
-		iTimerMinute = iClockMinute;	iTimerHour24 = iClockHour24;
-	} else ClockReset();
+		iTimerCentis =         0;	iTimerSecond = iClockSec;
+		iTimerMinute = iClockMin;	iTimerHour24 = iClockHour;
+	} else ClockClear();
 }
 //------------------------------------------------------------------------------//
 static void ClockLocal(void) {
@@ -87,15 +87,15 @@ static void ClockLocal(void) {
 	if(time(&iCurrTime) == iPrevTime) return;
 	localtime_r(&iCurrTime, &TimeInfo);
 
-	iClockSecond = TimeInfo.tm_sec ;
-	iClockMinute = TimeInfo.tm_min ;
-	iClockHour24 = TimeInfo.tm_hour;
+	iClockSec  = TimeInfo.tm_sec ;
+	iClockMin  = TimeInfo.tm_min ;
+	iClockHour = TimeInfo.tm_hour;
 
-	iClockDay    = TimeInfo.tm_mday;
-	iClockMonth  = TimeInfo.tm_mon ;
-	iClockYear   = TimeInfo.tm_year;
+	iClockDay  = TimeInfo.tm_mday;
+	iClockMon  = TimeInfo.tm_mon ;
+	iClockYear = TimeInfo.tm_year;
 
-	iClockWeek   = TimeInfo.tm_wday;
+	iClockWeek = TimeInfo.tm_wday;
 }
 //------------------------------------------------------------------------------//
 static void ClockTimer(void) {
@@ -234,7 +234,7 @@ static void ClockChange(void) {
 
 //==============================================================================//
 static void ClockInit(void) {
-	iCurrTime = 0;	ClockReset();
+	iCurrTime = 0;	ClockClear();
 	configTzTime("JST-9", "ntp.nict.jp", "ntp.jst.mfeed.ad.jp");
 }
 //------------------------------------------------------------------------------//
